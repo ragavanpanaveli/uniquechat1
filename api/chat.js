@@ -9,19 +9,18 @@ export default async function handler(req, res) {
         const { message, language = 'english' } = req.body;
         const HF_API_KEY = (process.env.HF_API_KEY || '').trim();
 
-        if (!HF_API_KEY) {
-            return res.json({ text: "❌ Machi, HF_API_KEY set pannala! Vercel settings-la add pannu da." });
-        }
-
+        if (!HF_API_KEY) return res.json({ text: "❌ HF_API_KEY is missing." });
+        
         const isTamil = language === 'tamil';
         const systemPrompt = isTamil 
-            ? "Tamil best friend. Reply only in Tamil script." 
-            : "Friendly best friend. Reply only in English.";
+            ? "Friendly Tamil friend. Use Tamil script only. Call user 'machi'." 
+            : "Friendly English friend. Call user 'machi' or 'bro'.";
 
+        // Using Zephyr: It's extremely fast and stable
         const prompt = `<s>[INST] ${systemPrompt}\n\nUser: ${message} [/INST]`;
 
         const response = await fetch(
-            "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+            "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
             {
                 method: "POST",
                 headers: {
@@ -37,21 +36,19 @@ export default async function handler(req, res) {
 
         if (!response.ok) {
             const err = await response.text();
-            if (err.includes('loading')) {
-                return res.json({ text: "⏳ AI ready agittu iruku! Oru 10 seconds kazhithu thirumba message pannu machi. 😊" });
-            }
-            return res.json({ text: "Machi, AI busy-a irukku. Please try again in 5 seconds! 😅" });
+            if (err.includes('loading')) return res.json({ text: "⏳ AI is loading. Wait 10s and chat! 😊" });
+            return res.json({ text: "Machi, AI busy-a irukku. Re-send pannu da! 😅" });
         }
 
         const data = await response.json();
         let aiText = (Array.isArray(data) ? data[0]?.generated_text : data?.generated_text) || '';
         
-        // Clean the response
+        // Final cleaning
         aiText = aiText.replace(/\[\/INST\]/g, '').replace(/<s>/g, '').replace(/<\/s>/g, '').trim();
 
-        res.json({ text: aiText || "Machi, enna solrathunnu therila! Try again? 😅" });
+        res.json({ text: aiText || "Machi, try again! 😅" });
 
-    } catch (error) {
-        res.status(500).json({ text: "❌ Connection issue da! Check your internet." });
+    } catch (e) {
+        res.status(500).json({ text: "❌ Connection Error" });
     }
 }
