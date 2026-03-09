@@ -1,9 +1,10 @@
-/* Main App Layout */
 .app-layout {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
     background: var(--bg-main);
+    overflow: hidden;
 }
 
 .app-layout input,
@@ -48,6 +49,7 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
     background: radial-gradient(circle at center, rgba(255, 77, 148, 0.08) 0%, transparent 70%);
     position: relative;
     width: 100%;
@@ -64,6 +66,11 @@
 
     .chat-area.mobile-hidden {
         display: none !important;
+    }
+
+    /* Fixed footer for mobile safari address bar */
+    .chat-input-area {
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
     }
 }
 
@@ -121,23 +128,24 @@
 }
 
 .message {
-    max-width: 85%;
-    padding: 0.8rem 1.1rem;
+    max-width: 88%;
+    padding: 0.75rem 1rem;
     border-radius: 20px;
     font-size: 0.9375rem;
-    line-height: 1.6;
+    line-height: 1.5;
     animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     position: relative;
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 @media (min-width: 768px) {
     .message {
         max-width: 75%;
         padding: 1rem 1.4rem;
+        gap: 6px;
     }
 }
 
@@ -324,8 +332,11 @@
 
 .chat-input-area {
     padding: 1rem;
-    background: rgba(255, 240, 246, 0.4);
+    background: rgba(255, 240, 246, 0.7);
+    backdrop-filter: var(--glass);
     border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 5;
 }
 
 @media (min-width: 768px) {
@@ -336,26 +347,31 @@
 
 .chat-input-wrapper {
     display: flex;
+    align-items: center;
     gap: 0.75rem;
-    background: rgba(255, 255, 255, 0.6);
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.25rem 0.75rem;
+    border-radius: 24px;
     border: 1px solid var(--border);
-    transition: border-color 0.2s;
+    transition: all 0.2s;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .chat-input-wrapper:focus-within {
     border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 4px 15px var(--primary-glow);
 }
 
 .chat-input-wrapper input {
+    flex: 1;
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
-    padding: 0.75rem 0;
+    padding: 0.8rem 0;
     color: #000000 !important;
-    /* Made text black for visibility */
     font-weight: 500;
+    font-size: 1rem; /* Better for mobile to prevent auto-zoom */
 }
 
 .chat-input-wrapper input::placeholder {
@@ -374,17 +390,20 @@
 
 .tab {
     flex: 1;
-    padding: 0.625rem 0.25rem;
+    padding: 0.75rem 0.25rem;
     text-align: center;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: 12px;
     transition: all 0.2s;
     color: var(--text-muted);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 
 @media (min-width: 768px) {

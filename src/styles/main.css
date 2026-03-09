@@ -47,8 +47,10 @@ body {
   color: var(--text-main);
   line-height: 1.6;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #app {
@@ -175,7 +177,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1.5rem;
   position: relative;
   z-index: 2;
   margin-left: auto;
@@ -198,7 +200,7 @@ body {
 .auth-card {
   width: 100%;
   max-width: 420px;
-  padding: 3rem !important;
+  padding: 2.5rem 2rem !important;
   border-radius: 32px;
   background: rgba(255, 255, 255, 0.08) !important;
   /* Crystal transparent */
