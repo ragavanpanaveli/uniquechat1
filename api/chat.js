@@ -1,79 +1,57 @@
 export default async function handler(req, res) {
-    const origin = req.headers.origin || '';
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Simple CORS for testing
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
-        const { message, history = [], language = 'english' } = req.body;
+        const { message, language = 'english' } = req.body;
         const HF_API_KEY = (process.env.HF_API_KEY || '').trim();
 
-        if (!HF_API_KEY) return res.status(500).json({ error: 'HF_API_KEY missing' });
-        
+        if (!HF_API_KEY) {
+            return res.json({ text: "❌ Machi, HF_API_KEY set pannala! Vercel settings-la add pannu da." });
+        }
+
         const isTamil = language === 'tamil';
-        const systemPrompt = isTamil
-            ? "You are UniqueChat AI, a funny Tamil friend. Use Tamil script. Call user 'machi'."
-            : "You are UniqueChat AI, a friendly bestie. Use English. Call user 'machi'.";
+        const systemPrompt = isTamil 
+            ? "Tamil best friend. Reply only in Tamil script." 
+            : "Friendly best friend. Reply only in English.";
 
-        const messages = [
-            { role: "system", content: systemPrompt },
-            ...history.slice(-4).map(h => ({
-                role: h.role === 'user' ? 'user' : 'assistant',
-                content: h.parts?.[0]?.text || ''
-            })),
-            { role: "user", content: message }
-        ];
+        const prompt = `<s>[INST] ${systemPrompt}\n\nUser: ${message} [/INST]`;
 
-        // Retry logic: Try 3 times if AI is busy
-        let aiResponse = null;
-        let attempts = 0;
-        const maxAttempts = 3;
-
-        while (attempts < maxAttempts) {
-            attempts++;
-            try {
-                const chatRes = await fetch(
-                    'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2/v1/chat/completions',
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${HF_API_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            messages,
-                            max_tokens: 500,
-                            temperature: 0.7
-                        })
-                    }
-                );
-
-                if (chatRes.ok) {
-                    const data = await chatRes.json();
-                    aiResponse = data?.choices?.[0]?.message?.content;
-                    if (aiResponse) break;
-                } else {
-                    const error = await chatRes.text();
-                    if (error.includes('loading')) {
-                        console.log(`Model loading, attempt ${attempts}...`);
-                        await new Promise(r => setTimeout(r, 5000)); // Wait 5s before retry
-                        continue;
-                    }
-                }
-            } catch (e) {
-                console.error(`Attempt ${attempts} failed:`, e);
+        const response = await fetch(
+            "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${HF_API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    inputs: prompt,
+                    parameters: { max_new_tokens: 300, temperature: 0.7, return_full_text: false }
+                }),
             }
+        );
+
+        if (!response.ok) {
+            const err = await response.text();
+            if (err.includes('loading')) {
+                return res.json({ text: "⏳ AI ready agittu iruku! Oru 10 seconds kazhithu thirumba message pannu machi. 😊" });
+            }
+            return res.json({ text: "Machi, AI busy-a irukku. Please try again in 5 seconds! 😅" });
         }
 
-        if (aiResponse) {
-            return res.json({ text: aiResponse.trim() });
-        } else {
-            return res.json({ text: "Machi, AI innum ready agala da! 😅 Oru 10 seconds kazhithu message pannu, kandippa reply tharen!" });
-        }
+        const data = await response.json();
+        let aiText = (Array.isArray(data) ? data[0]?.generated_text : data?.generated_text) || '';
+        
+        // Clean the response
+        aiText = aiText.replace(/\[\/INST\]/g, '').replace(/<s>/g, '').replace(/<\/s>/g, '').trim();
+
+        res.json({ text: aiText || "Machi, enna solrathunnu therila! Try again? 😅" });
 
     } catch (error) {
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ text: "❌ Connection issue da! Check your internet." });
     }
 }
