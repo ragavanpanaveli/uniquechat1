@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "outputDirectory": "public",
   "rewrites": [
     {
       "source": "/api/chat",
@@ -8,7 +7,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/$1"
+      "destination": "/client/dist/$1"
     }
   ]
 }
