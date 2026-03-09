@@ -5,7 +5,7 @@ import { createIcons, Settings, LogOut, Send, MessageSquare, Users, Sparkles, Vo
 
 // Initial UI Setup
 createIcons({
-  icons: { Settings, LogOut, Send, MessageSquare, Users, Sparkles, Volume2, Check, CheckCheck, ArrowLeft, Paperclip, Square, X, FolderOpen, FileText, Film, Music, Image, Download }
+  icons: { Settings, LogOut, Send, MessageSquare, Users, Sparkles, Volume2, Check, CheckCheck, ArrowLeft, Paperclip, Square, X, Plus, FolderOpen, FileText, Film, Music, Image, Download }
 })
 
 
@@ -1274,7 +1274,7 @@ async function getAIResponse(message: string): Promise<any> {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     const url = isLocal
       ? 'http://localhost:3000/api/chat'
-      : 'https://uniquechat-backend.vercel.app/api/chat';
+      : '/api/chat';  // Same domain on Vercel — no CORS issue!
 
     const body: any = {
       message,

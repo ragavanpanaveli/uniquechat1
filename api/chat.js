@@ -1,11 +1,25 @@
 export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Allow requests from the same Vercel deployment (and localhost for dev)
+    const allowedOrigins = [
+        'https://uniquechat1.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:4173',
+    ];
+    const origin = req.headers.origin || '';
+    const isAllowed = allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
+
+    res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : 'https://uniquechat1.vercel.app');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
@@ -14,7 +28,6 @@ export default async function handler(req, res) {
 
         if (!HF_API_KEY) return res.status(500).json({ error: '❌ HF_API_KEY is missing on the server.' });
 
-        // ── 1. FRIENDLY CHAT ─────────────────────────────────────────────
         const systemPrompt = language === 'tamil'
             ? "You are UniqueChat AI, a friendly best friend. You must respond ONLY in TAMIL script. Be warm, supportive, and humorous. Call the user 'machi' or 'da'. If they ask in English or Thanglish, you translate to beautiful Tamil."
             : "You are UniqueChat AI, a friendly best friend. You must respond ONLY in ENGLISH. Be warm, supportive, and humorous. Call the user 'machi', 'bro', or 'bestie'. If they use Tamil, you respond in clear English.";
