@@ -1,13 +1,10 @@
 {
   "version": 2,
+  "outputDirectory": "public",
   "rewrites": [
     {
       "source": "/api/chat",
       "destination": "/api/chat.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/client/dist/$1"
     }
   ]
 }
