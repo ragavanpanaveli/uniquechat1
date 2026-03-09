@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-    // Allow requests from the same Vercel deployment (and localhost for dev)
     const allowedOrigins = [
         'https://uniquechat1.vercel.app',
         'http://localhost:5173',
@@ -13,51 +12,148 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
-
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    if (req.method === 'OPTIONS') { res.status(200).end(); return; }
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
         const { message, history = [], language = 'english' } = req.body;
         const HF_API_KEY = (process.env.HF_API_KEY || '').trim();
 
-        if (!HF_API_KEY) return res.status(500).json({ error: '❌ HF_API_KEY is missing on the server.' });
+        if (!HF_API_KEY) return res.status(500).json({ error: '❌ HF_API_KEY is missing.' });
+        if (!message) return res.status(400).json({ error: 'Message is required.' });
 
-        const systemPrompt = language === 'tamil'
-            ? "You are UniqueChat AI, a friendly best friend. You must respond ONLY in TAMIL script. Be warm, supportive, and humorous. Call the user 'machi' or 'da'. If they ask in English or Thanglish, you translate to beautiful Tamil."
-            : "You are UniqueChat AI, a friendly best friend. You must respond ONLY in ENGLISH. Be warm, supportive, and humorous. Call the user 'machi', 'bro', or 'bestie'. If they use Tamil, you respond in clear English.";
+        const isTamil = language === 'tamil';
 
-        const formattedPrompt = `<s>[INST] ${systemPrompt}\n\nUser: ${message} [/INST]`;
+        const systemPrompt = isTamil
+            ? `You are UniqueChat AI, a warm and funny Tamil best friend chatbot. ALWAYS reply in Tamil (தமிழ்) script only. Be helpful, funny and friendly. Address the user as 'மச்சி' or 'டா'. Give clear and useful answers.`
+            : `You are UniqueChat AI, a helpful and friendly best friend chatbot. ALWAYS reply in English only. Be warm, funny, and supportive. Address the user as 'machi' or 'bro'. Give clear and useful answers.`;
 
-        const chatRes = await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${HF_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                inputs: formattedPrompt,
-                parameters: { max_new_tokens: 500, temperature: 0.8, return_full_text: false }
-            })
-        });
+        // Use chat_completion style for better results
+        const messages = [
+            { role: "system", content: systemPrompt },
+        ];
+
+        // Add history (last 6 messages max to avoid token limit)
+        const recentHistory = history.slice(-6);
+        for (const h of recentHistory) {
+            if (h.role === 'user') messages.push({ role: 'user', content: h.parts?.[0]?.text || '' });
+            if (h.role === 'model') messages.push({ role: 'assistant', content: h.parts?.[0]?.text || '' });
+        }
+
+        messages.push({ role: "user", content: message });
+
+        // Try chat completions API (newer, more reliable)
+        const chatRes = await fetch(
+            'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3/v1/chat/completions',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${HF_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'mistralai/Mistral-7B-Instruct-v0.3',
+                    messages: messages,
+                    max_tokens: 500,
+                    temperature: 0.7,
+                    stream: false
+                })
+            }
+        );
 
         if (!chatRes.ok) {
-            const err = await chatRes.text();
-            console.error('HF API Error:', err);
-            return res.json({ text: `Machi, oru nimisham wait pannu da! 😅 AI busy. Try again!` });
+            const errText = await chatRes.text();
+            console.error('HF Chat API Error:', chatRes.status, errText);
+
+            // Fallback to text-generation API
+            return await fallbackTextGeneration(req, res, message, systemPrompt, HF_API_KEY);
         }
 
         const data = await chatRes.json();
-        let aiText = (Array.isArray(data) ? data[0]?.generated_text : data?.generated_text) || '';
-        aiText = aiText.trim();
-        aiText = (aiText || 'Machi, ennavo solla try pannuren! Again try pannu 😅').replace(/^(AI:|UniqueChat AI:|Assistant:)/i, '').trim();
+        let aiText = data?.choices?.[0]?.message?.content || '';
+        aiText = cleanResponse(aiText, message, systemPrompt);
 
-        res.json({ text: aiText });
+        if (!aiText) return await fallbackTextGeneration(req, res, message, systemPrompt, HF_API_KEY);
+
+        return res.json({ text: aiText });
 
     } catch (error) {
         console.error('Internal Server Error:', error);
-        res.status(500).json({ error: '❌ Internal Server Error. Try again!' });
+        return res.status(500).json({ error: '❌ Server error. Try again!' });
     }
+}
+
+// Fallback: old text-generation API
+async function fallbackTextGeneration(req, res, message, systemPrompt, HF_API_KEY) {
+    try {
+        const prompt = `<s>[INST] ${systemPrompt}\n\nUser: ${message} [/INST]`;
+
+        const fallbackRes = await fetch(
+            'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${HF_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    inputs: prompt,
+                    parameters: {
+                        max_new_tokens: 400,
+                        temperature: 0.7,
+                        return_full_text: false,
+                        do_sample: true
+                    }
+                })
+            }
+        );
+
+        if (!fallbackRes.ok) {
+            const err = await fallbackRes.text();
+            console.error('Fallback HF Error:', err);
+
+            // Check if model is loading
+            if (err.includes('loading') || err.includes('currently loading')) {
+                return res.json({ text: '⏳ AI model is warming up! Please wait 20 seconds and try again 😊' });
+            }
+            return res.json({ text: 'Machi, AI busy aa iruku da! 😅 Oru nimisham wait pannu, again try pannu!' });
+        }
+
+        const data = await fallbackRes.json();
+        let aiText = (Array.isArray(data) ? data[0]?.generated_text : data?.generated_text) || '';
+        aiText = cleanResponse(aiText, message, systemPrompt);
+
+        return res.json({ text: aiText || 'Machi, oru nimisham wait pannu da! Again try pannu 😅' });
+
+    } catch (err) {
+        console.error('Fallback error:', err);
+        return res.json({ text: 'Machi, connection issue da! 😅 Again try pannu!' });
+    }
+}
+
+// Clean up AI response — remove repeated prompts, prefixes, etc.
+function cleanResponse(text, originalMessage, systemPrompt) {
+    if (!text) return '';
+
+    // Remove the system prompt if echoed back
+    text = text.replace(systemPrompt, '').trim();
+
+    // Remove common prompt artifacts
+    text = text
+        .replace(/^\s*\[\/INST\]\s*/i, '')
+        .replace(/^\s*<s>\s*/i, '')
+        .replace(/\s*<\/s>\s*$/i, '')
+        .replace(/^\s*(AI|UniqueChat AI|Assistant|System)\s*:\s*/i, '')
+        .replace(/^\s*User\s*:.*/i, '')  // Remove if user message echoed
+        .trim();
+
+    // If text contains the original message, only take what's after it
+    const userMsgIdx = text.toLowerCase().indexOf(originalMessage.toLowerCase());
+    if (userMsgIdx !== -1 && userMsgIdx < text.length / 2) {
+        text = text.slice(userMsgIdx + originalMessage.length).trim();
+        // Remove leading punctuation/labels after user msg
+        text = text.replace(/^[\s\-:]+/, '').trim();
+    }
+
+    return text.trim();
 }
