@@ -1,21 +1,34 @@
 :root {
+  /* Fully Pink & Ultra Cute Theme */
   --primary: #ff4d94;
+  /* Bubblegum Pink */
   --secondary: #ff85b3;
+  /* Soft Pink */
   --accent: #ff1a75;
+  /* Hot Pink */
+
   --primary-hover: #ff0066;
   --primary-glow: rgba(255, 77, 148, 0.4);
+
   --bg-main: #fff0f6;
+  /* Very light pink */
   --bg-card: rgba(255, 182, 193, 0.15);
+  /* Pinkish transparent */
   --sidebar-bg: rgba(255, 240, 246, 0.95);
+
   --text-main: #7c0032;
+  /* Deepest pink/magenta text */
   --text-muted: #a63d64;
   --border: rgba(255, 77, 148, 0.3);
+
   --success: #20c997;
   --error: #ff4d4d;
   --radius: 32px;
   --shadow: 0 25px 50px rgba(255, 77, 148, 0.15);
   --glass: blur(25px) saturate(200%);
+
   --gradient-main: linear-gradient(135deg, #ff4d94 0%, #ff85b3 100%);
+  --gradient-pink: linear-gradient(135deg, #fff0f6 0%, #ffd0e0 100%);
 }
 
 * {
@@ -27,11 +40,16 @@
 body {
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-main);
+  background-image:
+    radial-gradient(at 0% 0%, hsla(330, 80%, 60%, 0.15) 0px, transparent 45%),
+    radial-gradient(at 100% 0%, hsla(350, 80%, 60%, 0.15) 0px, transparent 45%),
+    radial-gradient(at 50% 100%, hsla(340, 80%, 60%, 0.1) 0px, transparent 50%);
   color: var(--text-main);
   line-height: 1.6;
   min-height: 100vh;
   min-height: 100dvh;
   overflow: hidden;
+  letter-spacing: -0.01em;
 }
 
 #app {
@@ -43,55 +61,157 @@ body {
 
 .auth-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
   min-height: 100vh;
-  padding: 1.5rem;
-  background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('/background.jpg');
+  width: 100%;
+  position: relative;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('/background.jpg');
   background-size: cover;
   background-position: center;
+  background-blend-mode: normal;
+  overflow: hidden;
+}
+
+.auth-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(2px);
+  z-index: 1;
+}
+
+/* ===== LEFT PANEL ===== */
+.auth-left-panel {
+  flex: 1;
+  position: relative;
+  z-index: 2;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem;
+}
+
+@media (min-width: 1024px) {
+  .auth-left-panel {
+    display: flex;
+  }
+}
+
+.auth-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(251, 113, 133, 0.3);
+  color: var(--text-main);
+  padding: 8px 18px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 2rem;
+  width: fit-content;
+}
+
+.auth-left-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 900;
+  color: var(--text-main);
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.auth-gradient-text {
+  background: linear-gradient(135deg, #fb7185, #f43f5e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-left-desc {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 3rem;
+  max-width: 500px;
+  font-weight: 500;
+}
+
+/* ===== RIGHT PANEL ===== */
+.auth-right-panel {
+  width: 100%;
+  max-width: 580px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  z-index: 2;
+  margin-left: auto;
+}
+
+@media (max-width: 1023px) {
+  .auth-right-panel {
+    max-width: 100%;
+    margin-left: 0;
+  }
 }
 
 .auth-card {
   width: 100%;
   max-width: 420px;
-  padding: 2.5rem;
+  padding: 3rem !important;
   border-radius: 32px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow);
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 }
 
-.hidden {
-  display: none !important;
+.auth-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
 }
 
-.btn {
-  display: inline-flex;
+.auth-logo-icon {
+  font-size: 2rem;
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.5rem;
-  border-radius: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: var(--gradient-main);
   color: white;
-  box-shadow: 0 4px 12px var(--primary-glow);
 }
 
-.btn-icon {
-  background: transparent;
-  padding: 8px;
+.auth-form-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.auth-form-subtitle {
   color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  opacity: 0.8;
 }
 
 .input-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .input-group label {
@@ -104,8 +224,61 @@ body {
 
 input {
   width: 100%;
-  padding: 0.875rem;
+  padding: 0.875rem 1rem;
   border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
   border: 1px solid var(--border);
+  color: var(--text-main);
   outline: none;
+  transition: all 0.2s;
+}
+
+input:focus {
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 4px var(--primary-glow);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: var(--gradient-main);
+  color: white;
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--primary-glow);
+}
+
+.btn-icon {
+  background: transparent;
+  padding: 8px;
+  color: var(--text-muted);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
 }
