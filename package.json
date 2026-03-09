@@ -1,13 +1,19 @@
 {
-  "name": "uniquechat-monorepo",
-  "version": "1.0.0",
+  "name": "uniquechat",
   "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "npm install --prefix client && npm run build --prefix client && mkdir -p public && cp -r client/dist/* public/",
-    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "dotenv": "^17.2.3"
+    "@supabase/supabase-js": "^2.39.7",
+    "lucide": "^0.344.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "^5.1.4"
   }
 }
