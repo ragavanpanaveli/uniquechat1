@@ -42,9 +42,11 @@ export default async function handler(req, res) {
 
         messages.push({ role: "user", content: message });
 
-        // Try chat completions API (newer, more reliable)
+        // Use Zephyr model which is often faster and less 'busy'
+        const modelId = "HuggingFaceH4/zephyr-7b-beta";
+        
         const chatRes = await fetch(
-            'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3/v1/chat/completions',
+            `https://api-inference.huggingface.co/models/${modelId}/v1/chat/completions`,
             {
                 method: 'POST',
                 headers: {
@@ -52,9 +54,9 @@ export default async function handler(req, res) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: 'mistralai/Mistral-7B-Instruct-v0.3',
+                    model: modelId,
                     messages: messages,
-                    max_tokens: 500,
+                    max_tokens: 512,
                     temperature: 0.7,
                     stream: false
                 })

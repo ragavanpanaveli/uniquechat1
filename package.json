@@ -2,6 +2,7 @@
   "name": "uniquechat-monorepo",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "cd client && npm install && npm run build",
     "install-all": "npm install && cd client && npm install && cd ../server && npm install"
