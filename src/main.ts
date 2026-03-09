@@ -1271,45 +1271,53 @@ async function handleChatSubmit(e: Event) {
 
 async function getAIResponse(message: string): Promise<any> {
   try {
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    const url = isLocal
-      ? 'http://localhost:3000/api/chat'
-      : '/api/chat';
+    const HF_API_KEY = (import.meta.env.VITE_HF_API_KEY || '').trim();
+    if (!HF_API_KEY) return { text: "❌ API Key Missing! Please add VITE_HF_API_KEY to your Vercel/Env settings." };
 
-    const body: any = {
-      message,
-      history: aiChatHistory,
-      language: aiLanguage
-    }
+    const isTamil = aiLanguage === 'tamil';
+    const systemPrompt = isTamil 
+        ? "Tamil best friend. Reply only in Tamil script. Call user 'machi'." 
+        : "English best friend. Call user 'machi' or 'bro'.";
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
+    const prompt = `<s>[INST] ${systemPrompt}\n\nUser: ${message} [/INST]`;
+
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${HF_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs: prompt,
+          parameters: { max_new_tokens: 300, temperature: 0.7, return_full_text: false }
+        }),
+      }
+    );
 
     if (!response.ok) {
-      let errorMsg = 'Failed to get AI response';
-      try {
-        const errData = await response.json();
-        errorMsg = errData.error || errorMsg;
-      } catch (_) { errorMsg = `HTTP ${response.status}` }
-      return { text: `❌ ${errorMsg}` };
+      const err = await response.text();
+      if (err.includes('loading')) return { text: "⏳ AI is warming up! Wait 10s and try again. 😊" };
+      return { text: "Machi, AI busy-a irukku. Please try again! 😅" };
     }
 
     const data = await response.json();
+    let aiText = (Array.isArray(data) ? data[0]?.generated_text : data?.generated_text) || '';
+    
+    // Clean response
+    aiText = aiText.replace(/\[\/INST\]/g, '').replace(/<s>/g, '').replace(/<\/s>/g, '').trim();
 
-    // Update history for contextual follow-up conversations
-    if (data.text) {
+    // Update history
+    if (aiText) {
       aiChatHistory.push({ role: 'user', parts: [{ text: message }] });
-      aiChatHistory.push({ role: 'model', parts: [{ text: data.text }] });
+      aiChatHistory.push({ role: 'model', parts: [{ text: aiText }] });
     }
 
-    return data; // { text: '...', generatedImage?: '...' }
+    return { text: aiText || "Machi, try again! 😅" };
+
   } catch (error: any) {
-    return { text: `❌ Connection Error: Make sure the backend is running. (${error.message})` };
+    return { text: `❌ Connection Error: ${error.message}` };
   }
 }
 
